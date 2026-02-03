@@ -1,6 +1,6 @@
 # Story 1.2: Fluxo de Pesquisa com Dados Mock
 
-**Status:** In Progress
+**Status:** Complete
 **Sprint:** 1
 **Assigned:** Dex (Dev)
 **Started:** 2026-02-03

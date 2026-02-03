@@ -210,8 +210,9 @@ export class PNCPAdapter implements DataSourceAdapter {
 
         // Normalize matching contracts to PriceItem
         for (const contract of matching) {
+          const uniqueId = `pncp-contrato-${contract.numeroContrato || Date.now()}-${contract.anoContrato}-${results.length}`;
           results.push({
-            id: `pncp-contrato-${contract.numeroContrato}-${contract.anoContrato}`,
+            id: uniqueId,
             description: contract.objetoContrato,
             price: contract.valorGlobal || contract.valorInicial,
             unit: "GLOBAL",
