@@ -129,30 +129,90 @@ export class PNCPAdapter implements DataSourceAdapter {
   async search(term: string, options?: SearchOptions): Promise<PriceItem[]> {
     const results: PriceItem[] = [];
 
-    // Default date range: last 6 months (more focused results)
+    // Default date range: last 12 months (as per requirements)
     const endDate = options?.filters?.maxDate || new Date();
     const startDate =
       options?.filters?.minDate ||
-      new Date(endDate.getTime() - 180 * 24 * 60 * 60 * 1000);
+      new Date(endDate.getTime() - 365 * 24 * 60 * 60 * 1000);
 
     try {
-      // 1. Search in contratos (actual contracts with values)
+      // PRIORITY 1: Search in contratacoes -> itens (BEST SOURCE - has unit prices)
+      console.log("[PNCPAdapter] Searching in contratacoes -> itens (priority source)...");
+      const contratacoes = await this.searchContratacoes(
+        term,
+        startDate,
+        endDate,
+        30 // Limit contratacoes to fetch
+      );
+
+      // Fetch detailed items for each contratacao
+      for (const contratacao of contratacoes) {
+        try {
+          // CNPJ is in orgaoEntidade.cnpj, not cnpjCompra
+          const cnpj = contratacao.orgaoEntidade?.cnpj;
+          if (!cnpj) {
+            console.warn(`[PNCPAdapter] Contratacao ${contratacao.numeroCompra} missing CNPJ, skipping itens fetch`);
+            continue;
+          }
+
+          const itens = await this.getItensContratacao(
+            cnpj,
+            contratacao.anoCompra,
+            contratacao.sequencialCompra
+          );
+
+          const normalizedItens = this.normalizeItens(
+            itens,
+            term,
+            contratacao.orgaoEntidade.razaoSocial,
+            contratacao.modalidadeNome
+          );
+
+          results.push(...normalizedItens);
+
+          // Respect rate limiting
+          await delay(RATE_LIMIT_DELAY);
+        } catch (error) {
+          // 404 is common - not all contratacoes have detailed items published
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          if (errorMsg.includes('404')) {
+            console.log(
+              `[PNCPAdapter] Contratacao ${contratacao.numeroCompra}/${contratacao.anoCompra}/${contratacao.sequencialCompra} has no detailed items (404)`
+            );
+          } else {
+            console.error(
+              `[PNCPAdapter] Error fetching itens for contratacao ${contratacao.numeroCompra}:`,
+              error
+            );
+          }
+        }
+
+        // Stop if we have enough results
+        if (results.length >= (options?.limit || 100)) break;
+      }
+
+      // PRIORITY 2: Search in atas de registro de preco (also has unit prices)
+      console.log("[PNCPAdapter] Searching in atas de registro de preco...");
+      const atas = await this.searchAtas(term, startDate, endDate);
+      const normalizedAtas = this.normalizeAtas(atas, term);
+      results.push(...normalizedAtas);
+
+      // PRIORITY 3: Search in contratos (global values only, less useful)
+      console.log("[PNCPAdapter] Searching in contratos...");
       const contratos = await this.searchContratos(
         term,
         startDate,
         endDate,
-        options?.limit || 50
+        20 // Lower limit since these are less relevant
       );
       results.push(...contratos);
 
-      // 2. Search in atas de registro de preco
-      const atas = await this.searchAtas(term, startDate, endDate);
-      const normalizedAtas = this.normalizeAtas(atas, term);
-      results.push(...normalizedAtas);
     } catch (error) {
       console.error("[PNCPAdapter] Search error:", error);
       // Return partial results if any
     }
+
+    console.log(`[PNCPAdapter] Total results found: ${results.length}`);
 
     // Apply filters if provided
     return this.applyFilters(results, options?.filters);
@@ -262,47 +322,66 @@ export class PNCPAdapter implements DataSourceAdapter {
     maxDate.setDate(maxDate.getDate() + 365);
     const effectiveEndDate = endDate > maxDate ? maxDate : endDate;
 
-    // Search across common modalidades
+    // Search across common modalidades (PREGAO is most common and has best data)
     const modalidadesToSearch = [
       MODALIDADES.PREGAO_ELETRONICO,
       MODALIDADES.DISPENSA_ELETRONICO,
+      MODALIDADES.PREGAO_PRESENCIAL,
     ];
 
     for (const modalidadeId of modalidadesToSearch) {
       if (results.length >= limit) break;
 
-      await this.enforceRateLimit();
+      // Paginate through results
+      let page = 1;
+      const maxPages = 3; // Iterate up to 3 pages per modalidade
 
-      const params = new URLSearchParams({
-        dataInicial: formatDateForPNCP(startDate),
-        dataFinal: formatDateForPNCP(effectiveEndDate),
-        codigoModalidadeContratacao: String(modalidadeId),
-        pagina: "1",
-      });
+      while (results.length < limit && page <= maxPages) {
+        await this.enforceRateLimit();
 
-      try {
-        const url = `${this.baseUrl}/contratacoes/publicacao?${params}`;
-        console.log(`[PNCPAdapter] Fetching contratacoes: ${url}`);
+        const params = new URLSearchParams({
+          dataInicial: formatDateForPNCP(startDate),
+          dataFinal: formatDateForPNCP(effectiveEndDate),
+          codigoModalidadeContratacao: String(modalidadeId),
+          pagina: String(page),
+        });
 
-        const response = await fetchWithRetry(url);
-        const data: PNCPPaginatedResponse<PNCPContratacao> =
-          await response.json();
+        try {
+          const url = `${this.baseUrl}/contratacoes/publicacao?${params}`;
+          console.log(`[PNCPAdapter] Fetching contratacoes (mod ${modalidadeId}, page ${page}): ${url}`);
 
-        // Filter by term in objetoCompra
-        const matching = data.data.filter((c) =>
-          c.objetoCompra.toLowerCase().includes(normalizedTerm)
-        );
+          const response = await fetchWithRetry(url);
+          const data: PNCPPaginatedResponse<PNCPContratacao> =
+            await response.json();
 
-        console.log(
-          `[PNCPAdapter] Modalidade ${modalidadeId}: ${data.data.length} total, ${matching.length} matching "${term}"`
-        );
+          if (!data.data || data.data.length === 0) {
+            break;
+          }
 
-        results.push(...matching);
-      } catch (error) {
-        console.error(
-          `[PNCPAdapter] Error fetching contratacoes (modalidade ${modalidadeId}):`,
-          error
-        );
+          // Filter by term in objetoCompra
+          const matching = data.data.filter((c) =>
+            c.objetoCompra.toLowerCase().includes(normalizedTerm)
+          );
+
+          console.log(
+            `[PNCPAdapter] Modalidade ${modalidadeId} page ${page}: ${data.data.length} total, ${matching.length} matching "${term}"`
+          );
+
+          results.push(...matching);
+
+          // Check if more pages available
+          if (page >= (data.paginacao?.totalPaginas || 1)) {
+            break;
+          }
+
+          page++;
+        } catch (error) {
+          console.error(
+            `[PNCPAdapter] Error fetching contratacoes (modalidade ${modalidadeId}, page ${page}):`,
+            error
+          );
+          break;
+        }
       }
     }
 

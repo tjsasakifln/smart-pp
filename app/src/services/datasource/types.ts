@@ -93,14 +93,15 @@ export interface PNCPContratacao {
   numeroCompra: string;
   anoCompra: number;
   sequencialCompra: number;
-  cnpjCompra: string;
   modalidadeId: number;
   modalidadeNome: string;
   objetoCompra: string;
   valorTotalEstimado: number;
   valorTotalHomologado?: number;
-  situacaoCompra: string;
-  dataPublicacao: string;
+  situacaoCompraId?: number;
+  situacaoCompraNome?: string;
+  dataPublicacaoPncp?: string;
+  dataAberturaProposta?: string;
   dataEncerramentoProposta?: string;
   linkSistemaOrigem?: string;
   orgaoEntidade: PNCPOrgao;

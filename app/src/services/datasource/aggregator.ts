@@ -12,14 +12,25 @@ import { comprasGovAdapter } from "./comprasGovAdapter";
 /**
  * Priority ranking for data sources
  * Lower number = higher priority
+ *
+ * Priority: PNCP > Contratos > CATMAT
+ * Within PNCP: Itens > Atas > Contratos
  */
 const SOURCE_PRIORITY: Record<string, number> = {
+  "PNCP - Pregão Eletrônico": 1,
+  "PNCP - Pregao Eletronico": 1,
+  "PNCP - Pregão": 1,
   "PNCP - Pregao": 1,
-  "PNCP - Ata de Registro de Preco": 2,
-  "PNCP - Dispensa": 3,
-  "PNCP - Inexigibilidade": 4,
-  "Contratos - Compras.gov.br": 5,
-  "CATMAT - Compras.gov.br": 10, // Lowest priority (no prices)
+  "PNCP - Dispensa Eletrônica": 2,
+  "PNCP - Dispensa Eletronica": 2,
+  "PNCP - Dispensa": 2,
+  "PNCP - Ata de Registro de Preco": 3,
+  "PNCP - Contrato": 4,
+  "PNCP - Concorrência": 5,
+  "PNCP - Concorrencia": 5,
+  "PNCP - Inexigibilidade": 6,
+  "Contratos - Compras.gov.br": 7,
+  "CATMAT - Compras.gov.br": 10, // Lowest priority (catalog, no prices)
 };
 
 /**

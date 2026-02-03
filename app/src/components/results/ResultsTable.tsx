@@ -1,10 +1,14 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, ArrowUp, ArrowDown } from "lucide-react";
 import type { PriceResult } from "@/types/search";
+import type { SortField, SortOrder } from "@/services/stats/statsService";
 
 interface ResultsTableProps {
   results: PriceResult[];
+  sortField?: SortField;
+  sortOrder?: SortOrder;
+  onSort?: (field: SortField) => void;
 }
 
 function formatCurrency(value: number): string {
@@ -19,7 +23,69 @@ function formatDate(dateString: string): string {
   return date.toLocaleDateString("pt-BR");
 }
 
-export function ResultsTable({ results }: ResultsTableProps) {
+interface SortableHeaderProps {
+  field: SortField;
+  label: string;
+  currentField?: SortField;
+  currentOrder?: SortOrder;
+  onSort?: (field: SortField) => void;
+  align?: "left" | "right" | "center";
+}
+
+function SortableHeader({
+  field,
+  label,
+  currentField,
+  currentOrder,
+  onSort,
+  align = "left",
+}: SortableHeaderProps) {
+  const isActive = currentField === field;
+  const alignClass =
+    align === "right"
+      ? "justify-end"
+      : align === "center"
+      ? "justify-center"
+      : "justify-start";
+
+  return (
+    <th
+      className={`px-4 py-3 font-semibold ${
+        onSort ? "cursor-pointer hover:bg-slate-100 transition-colors" : ""
+      }`}
+      onClick={() => onSort && onSort(field)}
+    >
+      <div className={`flex items-center gap-2 ${alignClass}`}>
+        <span>{label}</span>
+        {onSort && (
+          <div className="flex flex-col">
+            <ArrowUp
+              className={`h-3 w-3 -mb-1 ${
+                isActive && currentOrder === "asc"
+                  ? "text-blue-600"
+                  : "text-gray-300"
+              }`}
+            />
+            <ArrowDown
+              className={`h-3 w-3 ${
+                isActive && currentOrder === "desc"
+                  ? "text-blue-600"
+                  : "text-gray-300"
+              }`}
+            />
+          </div>
+        )}
+      </div>
+    </th>
+  );
+}
+
+export function ResultsTable({
+  results,
+  sortField,
+  sortOrder,
+  onSort,
+}: ResultsTableProps) {
   if (results.length === 0) {
     return (
       <div className="text-center py-12 bg-slate-50 rounded-lg">
@@ -36,11 +102,39 @@ export function ResultsTable({ results }: ResultsTableProps) {
       <table className="w-full text-sm">
         <thead className="bg-slate-50 border-b">
           <tr>
-            <th className="px-4 py-3 text-left font-semibold">Descricao</th>
-            <th className="px-4 py-3 text-right font-semibold">Preco</th>
+            <SortableHeader
+              field="description"
+              label="Descricao"
+              currentField={sortField}
+              currentOrder={sortOrder}
+              onSort={onSort}
+              align="left"
+            />
+            <SortableHeader
+              field="price"
+              label="Preco"
+              currentField={sortField}
+              currentOrder={sortOrder}
+              onSort={onSort}
+              align="right"
+            />
             <th className="px-4 py-3 text-center font-semibold">Unidade</th>
-            <th className="px-4 py-3 text-left font-semibold">Fonte</th>
-            <th className="px-4 py-3 text-center font-semibold">Data</th>
+            <SortableHeader
+              field="source"
+              label="Fonte"
+              currentField={sortField}
+              currentOrder={sortOrder}
+              onSort={onSort}
+              align="left"
+            />
+            <SortableHeader
+              field="date"
+              label="Data"
+              currentField={sortField}
+              currentOrder={sortOrder}
+              onSort={onSort}
+              align="center"
+            />
             <th className="px-4 py-3 text-left font-semibold">Orgao</th>
             <th className="px-4 py-3 text-center font-semibold">Link</th>
           </tr>
