@@ -1,0 +1,66 @@
+// Prisma Schema - Licita Preços
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Search {
+  id           String         @id @default(cuid())
+  term         String
+  filters      Json?
+  resultsCount Int            @default(0)
+  sessionId    String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  results      SearchResult[]
+  reports      Report[]
+
+  @@index([term])
+  @@index([sessionId])
+  @@index([createdAt(sort: Desc)])
+}
+
+model SearchResult {
+  id            String   @id @default(cuid())
+  searchId      String
+  search        Search   @relation(fields: [searchId], references: [id], onDelete: Cascade)
+
+  description   String
+  price         Decimal  @db.Decimal(15, 2)
+  unit          String
+  source        String
+  sourceUrl     String
+  quotationDate DateTime
+  organ         String?
+
+  createdAt     DateTime @default(now())
+
+  @@index([searchId])
+  @@index([price])
+  @@index([quotationDate])
+}
+
+model Report {
+  id              String   @id @default(cuid())
+  searchId        String
+  search          Search   @relation(fields: [searchId], references: [id], onDelete: Cascade)
+
+  organName       String?
+  processNumber   String?
+  observations    String?
+  referencePrice  Decimal? @db.Decimal(15, 2)
+  referenceMethod String?
+  includeMethodology Boolean @default(true)
+
+  generatedAt     DateTime @default(now())
+  pdfUrl          String?
+
+  @@index([searchId])
+}

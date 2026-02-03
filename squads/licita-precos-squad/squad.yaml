@@ -1,0 +1,174 @@
+# ============================================================================
+# LICITA PRECOS SQUAD - Manifest
+# ============================================================================
+# Created by: Craft (Squad Creator)
+# Created at: 2026-02-03
+# Blueprint: squads/.designs/licita-precos-squad-blueprint.yaml
+# ============================================================================
+
+metadata:
+  name: licita-precos-squad
+  version: "1.0.0"
+  description: |
+    Squad para desenvolvimento do sistema Licita Precos -
+    ferramenta de pesquisa de precos para licitacoes publicas brasileiras
+  domain: gov-tech
+  language: pt-BR
+  status: active
+
+# ============================================================================
+# AGENT ROSTER
+# ============================================================================
+
+agents:
+  - id: pm
+    name: Morgan
+    role: Product Manager
+    file: agents/pm.md
+
+  - id: po
+    name: Owen
+    role: Product Owner
+    file: agents/po.md
+
+  - id: analyst
+    name: Ana
+    role: Business Analyst
+    file: agents/analyst.md
+
+  - id: architect
+    name: Aria
+    role: Software Architect
+    file: agents/architect.md
+
+  - id: dev
+    name: Dex
+    role: Full Stack Developer
+    file: agents/dev.md
+    primary: true
+
+  - id: data-engineer
+    name: Dani
+    role: Data Engineer
+    file: agents/data-engineer.md
+
+  - id: qa
+    name: Quinn
+    role: QA Engineer
+    file: agents/qa.md
+
+  - id: devops
+    name: Gage
+    role: DevOps Engineer
+    file: agents/devops.md
+
+  - id: sm
+    name: Sam
+    role: Scrum Master
+    file: agents/sm.md
+
+  - id: ux
+    name: Uma
+    role: UX/UI Designer
+    file: agents/ux.md
+
+# ============================================================================
+# TECH STACK
+# ============================================================================
+
+tech_stack:
+  frontend:
+    - Next.js 14+ (App Router)
+    - React 19
+    - TypeScript 5
+    - Tailwind CSS 4
+    - shadcn/ui
+    - Lucide React (icons)
+
+  backend:
+    - Next.js API Routes
+    - Prisma ORM
+    - PostgreSQL
+    - Zod (validation)
+    - Pino (logging)
+
+  data_sources:
+    - name: Compras.gov.br (CATMAT/CATSER)
+      base_url: http://compras.dados.gov.br
+      adapter: src/services/datasource/comprasGovAdapter.ts
+
+    - name: Contratos (2021+)
+      base_url: https://dadosabertos.compras.gov.br
+      adapter: src/services/datasource/comprasGovAdapter.ts
+
+    - name: PNCP (Portal Nacional Contratacoes Publicas)
+      base_url: https://pncp.gov.br/api/consulta/v1
+      adapter: src/services/datasource/pncpAdapter.ts
+      endpoints:
+        - /contratos
+        - /contratacoes
+        - /contratacoes/{cnpj}/{ano}/{seq}/itens
+        - /atas
+        - /pca
+
+  export:
+    - ExcelJS (xlsx)
+    - "@react-pdf/renderer" (pdf)
+
+  cache:
+    - lru-cache (in-memory)
+
+  deploy:
+    - Railway (app + PostgreSQL)
+
+# ============================================================================
+# CURRENT SPRINT
+# ============================================================================
+
+current_sprint:
+  id: sprint-1
+  name: Foundation Completion
+  start_date: "2026-02-03"
+  end_date: "2026-02-17"
+  stories:
+    - "1.1"
+    - "1.2"
+
+# ============================================================================
+# DOCUMENTATION
+# ============================================================================
+
+documentation:
+  prd: docs/prd.md
+  architecture: docs/architecture.md
+  pncp_analysis: docs/pncp-api-analysis.md
+  blueprint: squads/.designs/licita-precos-squad-blueprint.yaml
+
+# ============================================================================
+# COMMANDS
+# ============================================================================
+
+commands:
+  - name: dev
+    description: Start development server
+    command: cd app && npm run dev
+
+  - name: build
+    description: Build for production
+    command: cd app && npm run build
+
+  - name: test
+    description: Run tests
+    command: cd app && npm test
+
+  - name: lint
+    description: Lint code
+    command: cd app && npm run lint
+
+  - name: db-push
+    description: Push Prisma schema to database
+    command: cd app && npx prisma db push
+
+  - name: db-studio
+    description: Open Prisma Studio
+    command: cd app && npx prisma studio
