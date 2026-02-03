@@ -6,12 +6,23 @@
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
 *.key
 *.pem
 secrets/
 
 # Dependencies
 node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Next.js
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
 
 # Build & Cache
 dist/
@@ -19,6 +30,11 @@ build/
 .cache/
 *.log
 logs/
+.turbo/
+
+# Testing
+coverage/
+.nyc_output/
 
 # IDE & OS
 .DS_Store
@@ -33,6 +49,12 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+
+# MCP & Playwright
+.mcp.json
+.playwright-mcp/
+playwright-report/
+test-results/
 
 # ============================================
 # STEALTH MODE - AI Orchestration Hidden
