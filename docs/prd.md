@@ -523,7 +523,3 @@ Os seguintes itens estão **fora do escopo** do MVP e poderão ser considerados 
 | **Lei 14.133/2021** | Nova Lei de Licitações e Contratos Administrativos |
 | **Preço de Referência** | Valor estimado utilizado como base para contratações públicas |
 | **LGPD** | Lei Geral de Proteção de Dados |
-
----
-
-*Documento gerado pelo Synkra AIOS - PM Agent (Morgan)*

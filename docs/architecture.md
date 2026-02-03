@@ -1633,7 +1633,3 @@ API externa: compras.dados.gov.br (sem auth, JSON)
 - [Manual API Compras (PDF)](https://www.gov.br/compras/pt-br/acesso-a-informacao/manuais/manual-dados-abertos/manual-api-compras.pdf)
 - [Compras Públicas em Dados Abertos](https://www.gov.br/compras/pt-br/cidadao/compras-publicas-dados-abertos)
 - [Pesquisa de Preços - Nova Ferramenta](https://www.gov.br/compras/pt-br/sistemas/conheca-o-compras/pesquisa-de-precos)
-
----
-
-*Documento gerado pelo Synkra AIOS - Architect Agent (Aria)*

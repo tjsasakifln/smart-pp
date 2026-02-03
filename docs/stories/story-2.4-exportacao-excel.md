@@ -283,8 +283,6 @@ feat: implement Excel export functionality (Story 2.4)
   * Zebra striping and borders
 
 Closes #2.4
-
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 ```
 
 ---

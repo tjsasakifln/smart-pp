@@ -181,6 +181,3 @@ curl -X POST https://seu-app.railway.app/api/search \
 ## License
 
 MIT
-
----
-**Squad:** Licita Preços Team
