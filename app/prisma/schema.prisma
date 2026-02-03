@@ -11,26 +11,30 @@ datasource db {
 }
 
 model Search {
-  id           String         @id @default(cuid())
+  id           String   @id @default(cuid())
   term         String
   filters      Json?
-  resultsCount Int            @default(0)
+  resultsCount Int      @default(0)
   sessionId    String?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  results      SearchResult[]
-  reports      Report[]
+  results SearchResult[]
+  reports Report[]
 
+  // Single field indexes for individual query filters
   @@index([term])
   @@index([sessionId])
   @@index([createdAt(sort: Desc)])
+  // Composite indexes for common query patterns
+  @@index([sessionId, createdAt(sort: Desc)]) // For fetching recent searches by session
+  @@index([createdAt(sort: Desc), sessionId]) // For ordering queries
 }
 
 model SearchResult {
-  id            String   @id @default(cuid())
-  searchId      String
-  search        Search   @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  searchId String
+  search   Search @relation(fields: [searchId], references: [id], onDelete: Cascade)
 
   description   String
   price         Decimal  @db.Decimal(15, 2)
@@ -40,27 +44,34 @@ model SearchResult {
   quotationDate DateTime
   organ         String?
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
+  // Single field indexes
   @@index([searchId])
   @@index([price])
   @@index([quotationDate])
+  // Composite indexes for common query patterns
+  @@index([searchId, price(sort: Asc)]) // For sorted results by price
+  @@index([searchId, createdAt(sort: Desc)]) // For recent results
+  @@index([source]) // For filtering by source
 }
 
 model Report {
-  id              String   @id @default(cuid())
-  searchId        String
-  search          Search   @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  searchId String
+  search   Search @relation(fields: [searchId], references: [id], onDelete: Cascade)
 
-  organName       String?
-  processNumber   String?
-  observations    String?
-  referencePrice  Decimal? @db.Decimal(15, 2)
-  referenceMethod String?
-  includeMethodology Boolean @default(true)
+  organName          String?
+  processNumber      String?
+  observations       String?
+  referencePrice     Decimal? @db.Decimal(15, 2)
+  referenceMethod    String?
+  includeMethodology Boolean  @default(true)
 
-  generatedAt     DateTime @default(now())
-  pdfUrl          String?
+  generatedAt DateTime @default(now())
+  pdfUrl      String?
 
   @@index([searchId])
+  @@index([generatedAt(sort: Desc)]) // For fetching recent reports
+  @@index([searchId, generatedAt(sort: Desc)]) // For reports by search
 }
