@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchService } from "@/services/search/searchService";
+import { searchPersistence } from "@/services/search/searchPersistence";
 import type { SearchRequest } from "@/types/search";
 
 /**
@@ -10,9 +11,10 @@ import type { SearchRequest } from "@/types/search";
  * - Compras.gov.br (API de Dados Abertos)
  *
  * Falls back to mock data if APIs are unavailable.
+ * Automatically saves search history to database.
  */
 export async function POST(request: NextRequest) {
-  const requestId = `req_${Date.now()}`;
+  const requestId = 'req_' + Date.now();
 
   try {
     const body: SearchRequest = await request.json();
@@ -20,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     // Validate request
     if (!term || term.trim().length === 0) {
-      console.warn(`[${requestId}] Empty search term`);
+      console.warn('[' + requestId + '] Empty search term');
       return NextResponse.json(
         {
           error: "VALIDATION_ERROR",
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (term.trim().length < 2) {
-      console.warn(`[${requestId}] Search term too short: "${term}"`);
+      console.warn('[' + requestId + '] Search term too short: "' + term + '"');
       return NextResponse.json(
         {
           error: "VALIDATION_ERROR",
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[${requestId}] Search request: "${term.trim()}"`);
+    console.log('[' + requestId + '] Search request: "' + term.trim() + '"');
 
     // Execute search
     const response = await searchService.search({
@@ -54,12 +56,34 @@ export async function POST(request: NextRequest) {
     });
 
     console.log(
-      `[${requestId}] Search complete: ${response.pagination.totalResults} results`
+      '[' + requestId + '] Search complete: ' + response.pagination.totalResults + ' results'
     );
+
+    // Save search to database (async, don't block response)
+    // Only save on first page to avoid duplicate history entries
+    if (page === 1) {
+      // Extract session ID from request headers or cookies if available
+      const sessionId = request.headers.get("x-session-id") || undefined;
+
+      searchPersistence
+        .saveSearch(response, sessionId)
+        .then((searchId) => {
+          console.log(
+            '[' + requestId + '] Search saved to history: ' + searchId
+          );
+        })
+        .catch((error) => {
+          console.error(
+            '[' + requestId + '] Failed to save search to history:',
+            error
+          );
+          // Don't fail the request if persistence fails
+        });
+    }
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error(`[${requestId}] Search API error:`, error);
+    console.error('[' + requestId + '] Search API error:', error);
 
     // Check if it's a known error type
     if (error instanceof SyntaxError) {

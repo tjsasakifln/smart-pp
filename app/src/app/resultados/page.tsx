@@ -72,10 +72,18 @@ function ResultsContent() {
       setError(null);
 
       try {
+        // Get or create session ID
+        let sessionId = localStorage.getItem("sessionId");
+        if (!sessionId) {
+          sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+          localStorage.setItem("sessionId", sessionId);
+        }
+
         const response = await fetch("/api/search", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "x-session-id": sessionId,
           },
           body: JSON.stringify({ term }),
         });
