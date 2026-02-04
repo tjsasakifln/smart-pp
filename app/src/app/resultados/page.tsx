@@ -11,7 +11,8 @@ import {
   type Filters,
 } from "@/components/results";
 import { ExportButton } from "@/components/export";
-import { FileSpreadsheet, ArrowLeft, AlertCircle } from "lucide-react";
+import { ReportConfigModal } from "@/components/reports/ReportConfigModal";
+import { FileSpreadsheet, ArrowLeft, AlertCircle, FileText } from "lucide-react";
 import Link from "next/link";
 import type { SearchResponse } from "@/types/search";
 import {
@@ -37,6 +38,7 @@ function ResultsContent() {
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [isFiltersOpen, setIsFiltersOpen] = useState(true);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Initialize filters from URL params
   useEffect(() => {
@@ -271,10 +273,20 @@ function ResultsContent() {
                       )}
                     </div>
                   </div>
-                  <ExportButton
-                    searchId={processedData.id}
-                    disabled={processedData.results.length === 0}
-                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowReportModal(true)}
+                      disabled={processedData.results.length === 0}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Personalizar Relatório
+                    </button>
+                    <ExportButton
+                      searchId={processedData.id}
+                      disabled={processedData.results.length === 0}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -326,6 +338,15 @@ function ResultsContent() {
             )}
         </div>
       </section>
+
+      {/* Report Config Modal */}
+      {processedData && (
+        <ReportConfigModal
+          searchId={processedData.id}
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
 
       {/* Footer */}
       <footer className="border-t py-6 text-center text-sm text-muted-foreground">

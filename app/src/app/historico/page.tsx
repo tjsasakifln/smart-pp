@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { FileSpreadsheet, AlertCircle } from "lucide-react";
+import { FileSpreadsheet, AlertCircle, GitCompare } from "lucide-react";
 import Link from "next/link";
 import { HistoryList, SearchFilter } from "@/components/history";
+import { ComparisonModal } from "@/components/comparison";
 import { useSearchHistory } from "@/hooks/useSearchHistory";
 import type { HistoryFilters } from "@/types/history";
 
@@ -12,10 +13,45 @@ export default function HistoryPage() {
   const [page] = useState(1);
   const pageSize = 20;
 
+  // Story 3.5: Comparison state
+  const [selectedSearches, setSelectedSearches] = useState<string[]>([]);
+  const [showComparisonModal, setShowComparisonModal] = useState(false);
+
   const { data, isLoading, error, refetch, deleteSearch } = useSearchHistory(
     page,
     pageSize
   );
+
+  const handleToggleSelection = (searchId: string) => {
+    setSelectedSearches((prev) => {
+      if (prev.includes(searchId)) {
+        return prev.filter((id) => id !== searchId);
+      } else if (prev.length < 3) {
+        return [...prev, searchId];
+      }
+      return prev;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (!data?.searches) return;
+    const allIds = data.searches.slice(0, 3).map((s) => s.id);
+    setSelectedSearches(allIds);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedSearches([]);
+  };
+
+  const handleCompare = () => {
+    if (selectedSearches.length >= 2) {
+      setShowComparisonModal(true);
+    }
+  };
+
+  const handleCloseComparison = () => {
+    setShowComparisonModal(false);
+  };
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -79,6 +115,50 @@ export default function HistoryPage() {
 
                 {!isLoading && data && (
                   <>
+                    {/* Comparison Controls - Story 3.5 */}
+                    {data.searches.length > 0 && (
+                      <div className="mb-4 flex items-center justify-between gap-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-blue-900">
+                            {selectedSearches.length === 0
+                              ? "Selecione 2-3 pesquisas para comparar"
+                              : `${selectedSearches.length} pesquisa(s) selecionada(s)`}
+                          </p>
+                          {selectedSearches.length > 0 && selectedSearches.length < 2 && (
+                            <p className="text-xs text-blue-700 mt-1">
+                              Selecione pelo menos mais 1 pesquisa
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          {selectedSearches.length > 0 && (
+                            <button
+                              onClick={handleClearSelection}
+                              className="px-3 py-1.5 text-sm text-blue-700 hover:text-blue-900 transition-colors"
+                            >
+                              Limpar
+                            </button>
+                          )}
+                          {selectedSearches.length === 0 && data.searches.length >= 2 && (
+                            <button
+                              onClick={handleSelectAll}
+                              className="px-3 py-1.5 text-sm text-blue-700 hover:text-blue-900 transition-colors"
+                            >
+                              Selecionar 3 primeiras
+                            </button>
+                          )}
+                          <button
+                            onClick={handleCompare}
+                            disabled={selectedSearches.length < 2}
+                            className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <GitCompare className="h-4 w-4" />
+                            Comparar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="mb-4 text-sm text-muted-foreground">
                       {data.pagination.totalItems === 0
                         ? "Nenhuma pesquisa encontrada"
@@ -89,6 +169,8 @@ export default function HistoryPage() {
                       searches={data.searches}
                       onDelete={deleteSearch}
                       onRefetch={refetch}
+                      selectedSearches={selectedSearches}
+                      onToggleSelection={handleToggleSelection}
                     />
 
                     {data.pagination.totalPages > 1 && (
@@ -101,6 +183,13 @@ export default function HistoryPage() {
               </div>
             </div>
           )}
+
+          {/* Comparison Modal - Story 3.5 */}
+          <ComparisonModal
+            isOpen={showComparisonModal}
+            onClose={handleCloseComparison}
+            searchIds={selectedSearches}
+          />
         </div>
       </section>
 

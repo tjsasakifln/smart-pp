@@ -23,16 +23,25 @@ interface HistoryListProps {
   searches: SearchHistoryItem[];
   onDelete: (id: string) => Promise<void>;
   onRefetch?: () => void;
+  // Story 3.5: Multi-select for comparison
+  selectedSearches?: string[];
+  onToggleSelection?: (id: string) => void;
 }
 
 export function HistoryList({
   searches,
   onDelete,
   onRefetch,
+  selectedSearches = [],
+  onToggleSelection,
 }: HistoryListProps) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [refetchingId, setRefetchingId] = useState<string | null>(null);
+
+  const isSelected = (id: string) => selectedSearches.includes(id);
+  const isSelectionEnabled = !!onToggleSelection;
+  const canSelectMore = selectedSearches.length < 3;
 
   const handleView = (search: SearchHistoryItem) => {
     // Navigate to results page with the search term
@@ -92,25 +101,48 @@ export function HistoryList({
 
   return (
     <div className="space-y-4">
-      {searches.map((search) => (
-        <Card key={search.id}>
-          <CardHeader>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <CardTitle className="text-base truncate mb-2">
-                  {search.term}
-                </CardTitle>
-                <CardDescription className="flex items-center gap-4 text-xs">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {formatDate(search.createdAt)}
-                  </span>
-                  <span className="text-muted-foreground/50">|</span>
-                  <span>{search.resultsCount} resultados</span>
-                </CardDescription>
+      {searches.map((search) => {
+        const selected = isSelected(search.id);
+        const canSelect = canSelectMore || selected;
+
+        return (
+          <Card
+            key={search.id}
+            className={`transition-all ${
+              selected ? "ring-2 ring-blue-500 bg-blue-50/50" : ""
+            }`}
+          >
+            <CardHeader>
+              <div className="flex items-start gap-4">
+                {/* Story 3.5: Checkbox for comparison */}
+                {isSelectionEnabled && (
+                  <div className="pt-1">
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => onToggleSelection(search.id)}
+                      disabled={!canSelect}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label={`Selecionar pesquisa: ${search.term}`}
+                    />
+                  </div>
+                )}
+
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-base truncate mb-2">
+                    {search.term}
+                  </CardTitle>
+                  <CardDescription className="flex items-center gap-4 text-xs">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {formatDate(search.createdAt)}
+                    </span>
+                    <span className="text-muted-foreground/50">|</span>
+                    <span>{search.resultsCount} resultados</span>
+                  </CardDescription>
+                </div>
               </div>
-            </div>
-          </CardHeader>
+            </CardHeader>
           <CardContent>
             <div className="flex gap-2 flex-wrap">
               <Button
@@ -146,7 +178,8 @@ export function HistoryList({
             </div>
           </CardContent>
         </Card>
-      ))}
+        );
+      })}
     </div>
   );
 }
